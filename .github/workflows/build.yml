@@ -12,9 +12,13 @@ jobs:
       - name: Install git
         run: sudo apt-get install jq curl
       - name: Set node_exporter version
-        run: echo "NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')" >> $GITHUB_ENV
-      - name: Download node_exporter
-        run: curl --silent "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url' | curl -o SOURCES/node_exporter
+        run: |
+          export NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')
+          echo "NODE_EXPORTER_VERSION=$NODE_EXPORTER_VERSION" >> $GITHUB_ENV
+      - name: Set node_exporter url
+        run: |
+          export NODE_EXPORTER_URL=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url')
+          echo "NODE_EXPORTER_URL=$NODE_EXPORTER_URL" >> $GITHUB_ENV
       - name: rpmbuild
         uses: naveenrajm7/rpmbuild@master
         with:

@@ -1,17 +1,3 @@
-# If any of the following macros should be set otherwise,
-# you can wrap any of them with the following conditions:
-# - %%if 0%%{centos} == 7
-# - %%if 0%%{?rhel} == 7
-# - %%if 0%%{?fedora} == 23
-# Or just test for particular distribution:
-# - %%if 0%%{centos}
-# - %%if 0%%{?rhel}
-# - %%if 0%%{?fedora}
-#
-# Be aware, on centos, both %%rhel and %%centos are set. If you want to test
-# rhel specific macros, you can use %%if 0%%{?rhel} && 0%%{?centos} == 0 condition.
-# (Don't forget to replace double percentage symbol with single one in order to apply a condition)
-
 %global provider        github
 %global provider_tld    com
 %global project         prometheus
@@ -19,6 +5,7 @@
 # https://github.com/prometheus/node_exporter
 %global provider_prefix %{provider}.%{provider_tld}/%{project}/%{repo}
 %global import_path     %{provider_prefix}
+%undefine _disable_source_fetch
 
 Name:           golang-%{provider}-%{project}-%{repo}
 Version:        %{getenv:NODE_EXPORTER_VERSION}
@@ -26,7 +13,7 @@ Release:        1%{?dist}
 Summary:        Exporter for machine metrics
 License:        ASL 2.0
 URL:            https://%{provider_prefix}
-Source0:        node_exporter
+Source0:        %{getenv:NODE_EXPORTER_URL}
 Source1:        sysconfig.node_exporter
 Source2:        node_exporter.service
 Source3:        node_exporter_textfile_wrapper.sh
@@ -37,6 +24,9 @@ Provides:       node_exporter = %{version}-%{release}
 
 %description
 %{summary}
+
+%prep
+%setup -q -n %{repo}-%{version}.linux-amd64
 
 %install
 install -d -p   %{buildroot}%{_sbindir} \
@@ -54,7 +44,7 @@ install -p -m 0644 %{_sourcedir}/sysconfig.node_exporter %{buildroot}%{_sysconfd
 install -p -m 0644 %{_sourcedir}/node_exporter.service %{buildroot}%{_unitdir}/node_exporter.service
 %endif
 install -p -m 0755 %{_sourcedir}/node_exporter_textfile_wrapper.sh %{buildroot}%{_sbindir}/node_exporter_textfile_wrapper
-install -p -m 0755 %{_sourcedir}/node_exporter %{buildroot}%{_sbindir}/node_exporter
+install -p -m 0755 ./node_exporter %{buildroot}%{_sbindir}/node_exporter
 
 %files
 %if 0%{?rhel} != 6
