@@ -11,9 +11,32 @@ jobs:
         uses: actions/checkout@v2
       - name: Install git
         run: sudo apt-get install jq curl
-      - name: Download node_exporter
-        run: curl --silent "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url' | curl -o SOURCES/node_exporter
       - name: Set node_exporter version
         run: echo "NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')" >> $GITHUB_ENV
+      - name: Download node_exporter
+        run: curl --silent "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url' | curl -o SOURCES/node_exporter
       - name: rpmbuild
-        uses: robertdebock/rpmbuild-action@1.1.1
+        uses: naveenrajm7/rpmbuild@master
+        with:
+          spec_file: SPECS/node_exporter.spec
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{ env.NODE_EXPORTER_VERSION }}
+          release_name: Release ${{ env.NODE_EXPORTER_VERSION }}
+          body: |
+            Bumped node_exporter version
+          draft: false
+          preprelease: false
+      - name: Release RPM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+        with:
+          upload_url: ${{ steps.create_release_outputs.upload_url }}
+          asset_path: ${{ steps.rpm_build.outputs.source_rpm_path }}
+          asset_name: ${{ steps.rpm_build.outputs.source_rpm_name }}
+          asset_content_type: ${{ steps.rpm_build.outputs.rpm_content_type }}
