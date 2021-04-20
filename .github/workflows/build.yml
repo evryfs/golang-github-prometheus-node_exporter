@@ -11,7 +11,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Install git
         run: sudo apt-get install jq curl
-        run: 
       - name: Download node_exporter
         run: curl --silent "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url' | curl -o SOURCES/node_exporter
       - name: Set node_exporter version
