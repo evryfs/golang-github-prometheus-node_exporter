@@ -17,6 +17,3 @@ jobs:
         run: echo "NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')" >> $GITHUB_ENV
       - name: rpmbuild
         uses: robertdebock/rpmbuild-action@1.1.1
-        with:
-          distribution: centos-7
-
