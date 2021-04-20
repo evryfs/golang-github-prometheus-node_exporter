@@ -22,7 +22,7 @@ jobs:
       - name: rpmbuild
         uses: naveenrajm7/rpmbuild@master
         with:
-          spec_file: SPECS/node_exporter.spec
+          spec_file: SPECS/golang-github-prometheus-node_exporter.spec
       - name: Create release
         id: create_release
         uses: actions/create-release@latest
