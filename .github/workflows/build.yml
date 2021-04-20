@@ -1,0 +1,23 @@
+name: Build RPM
+on:
+  push:
+  schedule:
+    - cron: '0 6 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Install git
+        run: sudo apt-get install jq curl
+        run: 
+      - name: Download node_exporter
+        run: curl --silent "https://api.github.com/repos/prometheus/node_exporter/releases/latest" | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url' | curl -o SOURCES/node_exporter
+      - name: Set node_exporter version
+        run: echo "NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')" >> $GITHUB_ENV
+      - name: rpmbuild
+        uses: robertdebock/rpmbuild-action@1.1.1
+        with:
+          distribution: centos-7
+
