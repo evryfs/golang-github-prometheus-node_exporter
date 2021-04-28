@@ -19,10 +19,13 @@ jobs:
         run: |
           export NODE_EXPORTER_URL=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url')
           echo "NODE_EXPORTER_URL=$NODE_EXPORTER_URL" >> $GITHUB_ENV
-      - name: rpmbuild
-        uses: naveenrajm7/rpmbuild@master
+      - name: rpmbuilder
+        id: rpmbuilder
+        uses: evryfs/rpmbuilder-action/centos7@main
         with:
-          spec_file: SPECS/golang-github-prometheus-node_exporter.spec
+          spec: SPECS/golang-github-prometheus-node_exporter.spec
+          source_dir: SOURCES
+          spectool: true
       - name: Create release
         id: create_release
         uses: actions/create-release@latest
@@ -35,12 +38,16 @@ jobs:
             Bumped node_exporter version
           draft: false
           preprelease: false
+      - name: package basename
+        id: basename
+        run: |
+          echo "::set-output name=basename::$(basename ${{steps.rpmbuilder.outputs.rpm_files}})"
       - name: Release RPM
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{ steps.create_release_outputs.upload_url }}
-          asset_path: ${{ steps.rpm_build.outputs.source_rpm_path }}
-          asset_name: ${{ steps.rpm_build.outputs.source_rpm_name }}
-          asset_content_type: ${{ steps.rpm_build.outputs.rpm_content_type }}
+          asset_path: ${{ steps.rpmbuilder.outputs.rpm_files }}
+          asset_name: ${{ steps.basename.outputs.basename }}
+          asset_content_type: application/octet-stream
