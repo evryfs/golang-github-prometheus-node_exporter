@@ -1,0 +1,39 @@
+name: Build RPM
+on:
+  push:
+  schedule:
+    - cron: '0 6 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Install git
+        run: sudo apt-get install jq curl
+      - name: Set node_exporter version
+        run: |
+          export NODE_EXPORTER_VERSION=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.tag_name'| sed 's/^v//')
+          echo "NODE_EXPORTER_VERSION=$NODE_EXPORTER_VERSION" >> $GITHUB_ENV
+      - name: Set node_exporter url
+        run: |
+          export NODE_EXPORTER_URL=$(curl --silent 'https://api.github.com/repos/prometheus/node_exporter/releases/latest' | jq -r '.assets[] | select(.name | endswith("linux-amd64.tar.gz") ) | .browser_download_url')
+          echo "NODE_EXPORTER_URL=$NODE_EXPORTER_URL" >> $GITHUB_ENV
+      - name: debug
+        run: env
+      - name: rpmbuilder
+        id: rpmbuilder
+        uses: evryfs/rpmbuilder-action/centos7@main
+        with:
+          spec: SPECS/golang-github-prometheus-node_exporter.spec
+          source_dir: SOURCES
+          spectool: true
+      - name: package basename
+        id: basename
+        run: |
+          echo "::set-output name=basename::$(basename ${{steps.rpmbuilder.outputs.rpm_files}})"
+      - name: Upload RPM to nexus
+        run: |
+          for RPMFILE in ${{ steps.rpmbuilder.outputs.rpm_files }}; do 
+            curl -v --upload-file $RPMFILE https://fsnexus.evry.com/repository/yum-releases/${{ steps.basename.outputs.basename }};
+          done
